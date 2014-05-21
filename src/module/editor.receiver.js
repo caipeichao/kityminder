@@ -28,7 +28,7 @@ Minder.Receiver = kity.createClass( 'Receiver', {
                 me.keyboardEvents.call( me, new MinderEvent( e.type == 'keyup' ? "beforekeyup" : e.type, e ) )
             } )
         }
-        utils.addCssRule( 'km_receiver_css', ' .km_receiver{position:absolute;padding:0;margin:0;word-wrap:break-word;clip:rect(1em 1em 1em 1em);}' ); //
+        utils.addCssRule( 'km_receiver_css', ' .km_receiver{white-space:nowrap;position:absolute;padding:0;margin:0;word-wrap:break-word;clip:rect(1em 1em 1em 1em);}' ); //
         this.km.on( 'textedit.beforekeyup textedit.keydown textedit.keypress textedit.paste', utils.proxy( this.keyboardEvents, this ) );
         this.timer = null;
         this.index = 0;
@@ -95,7 +95,7 @@ Minder.Receiver = kity.createClass( 'Receiver', {
             if ( browser.gecko && /\s$/.test( text ) ) {
                 text += "\u200b";
             }
-            me.textShape.setContent( text );
+
             me.setContainerStyle();
             me.minderNode.setText( text );
             if ( text.length == 0 ) {
@@ -112,11 +112,15 @@ Minder.Receiver = kity.createClass( 'Receiver', {
             me.updateTextData();
 
             me.updateIndex();
-            me.updateSelection();
 
-            me.timer = setTimeout( function () {
-                me.selection.setShow()
-            }, 500 );
+
+            if( me.selection.getSelectionShowStatus()) {
+                me.updateSelection();
+                me.timer = setTimeout(function () {
+                    me.selection.setShow()
+                }, 500)
+            }
+
         }
         var isTypeText = false;
         var isKeypress = false;
@@ -127,20 +131,16 @@ Minder.Receiver = kity.createClass( 'Receiver', {
             isTypeText = false;
             isKeypress = false;
             switch ( e.originEvent.keyCode ) {
-            case keys.Enter:
-            case keys.Tab:
-                this.selection.setHide();
-                this.clear().setTextEditStatus( false );
-                this.km.fire( 'contentchange' );
-                this.km.setStatus( 'normal' );
-                e.preventDefault();
-                return;
-                break;
-            case keymap.Shift:
-            case keymap.Control:
-            case keymap.Alt:
-            case keymap.Cmd:
-                return;
+                case keys.Enter:
+                case keys.Tab:
+                    this.selection.setHide();
+                    this.clear().setTextEditStatus( false );
+                    this.km.fire( 'contentchange' );
+                    this.km.setStatus( 'normal' );
+                    e.preventDefault();
+                    return;
+                    break;
+
             }
 
             if ( e.originEvent.ctrlKey || e.originEvent.metaKey ) {
@@ -167,19 +167,21 @@ Minder.Receiver = kity.createClass( 'Receiver', {
             }
             isTypeText = true;
 
-            setTextToContainer();
+            if(!orgEvt.ctrlKey && !orgEvt.metaKey && !orgEvt.shiftKey && !orgEvt.altKey){
+                setTextToContainer();
+            }
+
             break;
 
 
 
         case 'keypress':
 
-            if ( isTypeText )
-//                setTextToContainer();
             isKeypress = true;
             break;
 
         case 'beforekeyup':
+
             switch ( keyCode ) {
             case keymap.Enter:
             case keymap.Tab:
@@ -195,7 +197,7 @@ Minder.Receiver = kity.createClass( 'Receiver', {
 
             }
 
-            if ( !isKeypress ) {
+            if ( !isKeypress && !orgEvt.ctrlKey && !orgEvt.metaKey && !orgEvt.shiftKey && !orgEvt.altKey ) {
                 setTextToContainer();
             }
             return true;
@@ -381,7 +383,7 @@ Minder.Receiver = kity.createClass( 'Receiver', {
                 var lastOffset = this.textData[ this.textData.length - 1 ];
                 width = lastOffset.x - startOffset.x + lastOffset.width;
             } catch ( e ) {
-                console.log( 'e' )
+                console.log( e )
             }
 
         } else {
@@ -406,4 +408,5 @@ Minder.Receiver = kity.createClass( 'Receiver', {
         this.container.textContent = txt;
         return this;
     }
+
 } );
